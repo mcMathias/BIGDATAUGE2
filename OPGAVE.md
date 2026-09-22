@@ -100,16 +100,17 @@ flowchart TD
 
 
 
-### Dag 2 – Validering, MW→MWh og timer
+### Modul02 – Validering, MW→MWh og timer
 
 Arbejdsopgaver:
 
 - Implementér `TODO 1–3` i `src/pipeline.py`.
-- Afvis dubletnøgler og uventede kolonnebrud tydeligt.
-- Omregn hvert femminuttersinterval med `MW × 5/60`.
+- Afvis dubletter på den sammensatte primærnøgle og uventede kolonnebrud tydeligt.
+- Omregn hvert femminuttersinterval med `MW × 5/60` efter caseantagelsen i `DATAORDLISTE.md`. Forklar dette metodeforbehold i din eksisterende kildedokumentation; beregnet realtime-MWh er et sammenligningsgrundlag, ikke officiel afregning.
 - Aggregér på UTC-time og prisområde.
 - Bevar antal intervaller pr. time.
 - Start med `--period dst`, og gå derefter til januar.
+- Brug `--stage realtime` til Modul02-checkpointet. Det gemmer mellemoutput uden at kræve TODO 4–6.
 
 Checkpoint:
 
@@ -117,7 +118,9 @@ Checkpoint:
 - En dokumenteret kontrol af, at sommertidsdøgnet ikke får en kunstig ekstra time.
 - En liste over ufuldstændige timer.
 
-### Dag 3 – Afregning, join og kvalitetsflag
+> Dokumentation og bevis for alle tre punkter: se [docs/dst_kontrol.md](docs/dst_kontrol.md)
+
+### Modul03 – Afregning, join og kvalitetsflag
 
 Arbejdsopgaver:
 
@@ -134,7 +137,7 @@ Checkpoint:
 - Oversigt over joinstatus, ufuldstændige timer, negative værdier og andre fund.
 - Forklaring af Storebælt-logikken.
 
-### Dag 4 – Undersøgelse og Big Data-perspektiv
+### Modul04 – Undersøgelse og Big Data-perspektiv
 
 Arbejdsopgaver:
 
@@ -142,7 +145,7 @@ Arbejdsopgaver:
 - Sammenlign mindst to perioder eller prisområder.
 - Brug både en samlet måling og konkrete timer som evidens.
 - Forklar casen med mindst fire relevante Big Data-karakteristika.
-- Lav miniopgaven om platform, ansvar og sikkerhed nedenfor.
+- Lav caseopgaven om platform, ansvar og sikkerhed nedenfor.
 
 Checkpoint:
 
@@ -150,7 +153,7 @@ Checkpoint:
 - Et kort Big Data-notat.
 - Et begrundet platform- og ansvarsvalg.
 
-### Dag 5 – Reproducerbarhed og faglig forklaring
+### Modul05 – Reproducerbarhed og faglig forklaring
 
 Arbejdsopgaver:
 
@@ -183,7 +186,7 @@ Vælg mindst tre. Du må formulere dine egne, hvis de kan besvares med data og g
 11. Er korrelation nok til at sige, at to dataserier stemmer overens?
 12. Hvilke kvalitetsproblemer kan findes alene med regler, og hvilke kræver domæneviden eller metadata?
 
-## Miniopgave – Er dette Big Data?
+## Caseopgave – Er dette Big Data?
 
 Tag stilling til casen ud fra mindst fire relevante karakteristika, eksempelvis volume, velocity, variety, veracity, value og historik/revisioner.
 
@@ -194,7 +197,7 @@ Du skal skelne mellem:
 
 En bestemt rækkegrænse er ikke i sig selv et tilstrækkeligt argument.
 
-## Miniopgave – Platform, ansvar og sikkerhed
+## Caseopgave – Platform, ansvar og sikkerhed
 
 Sammenlign kort:
 
@@ -232,3 +235,15 @@ En stærk løsning er ikke den med flest linjer kode. Den:
 - skjuler ikke dataproblemer;
 - adskiller observation, antagelse og konklusion;
 - forbinder tekniske valg med den analyse, data skal bruges til.
+
+## Revisionsnote
+
+Revision 1.1 afstemmer navigationen med Modul01–Modul05 og adskiller caseopgaver fra fælles miniopgaver på separate eksempeldata. Minimumsløsning og afleveringskrav er uændrede.
+
+## Revisionshistorik
+
+| Revision | Dato | Ændring |
+|---|---|---|
+| 1.4 | 21. september 2026 | Præciserer arbejdsrute og forklaringer uden nye casekrav. |
+| 1.2 | 21. september 2026 | QA-001. |
+| 1.3 | 21. september 2026 | Præciserer Modul01→Modul02-arbejdsruten og fagterminologi for primærnøgle/join key uden nye krav. |

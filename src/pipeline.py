@@ -19,6 +19,22 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 RAW_DIR = PROJECT_ROOT / "data" / "raw"
 OUTPUT_DIR = PROJECT_ROOT / "output"
 
+PRODUCTION_COLUMNS = [
+    "ProductionLt100MW",
+    "ProductionGe100MW",
+    "OffshoreWindPower",
+    "OnshoreWindPower",
+    "SolarPower",
+]
+
+FOREIGN_EXCHANGE_COLUMNS = [
+    "ExchangeGermany",
+    "ExchangeNetherlands",
+    "ExchangeGreatBritain",
+    "ExchangeNorway",
+    "ExchangeSweden",
+]
+
 
 class NextTodo(NotImplementedError):
     """Bruges til at pege på næste nummererede trin i starterprojektet."""
@@ -105,9 +121,12 @@ def validate_snapshot(
 
 
 def mw_to_mwh(values: pd.Series, interval_minutes: int = 5) -> pd.Series:
-    """TODO 2: Konvertér gennemsnitlig effekt til energi for intervallet."""
-    raise NextTodo("NÆSTE TODO 2: Implementér mw_to_mwh().")
+    """TODO 2: Beregn MWh som MW × interval_minutes/60.
 
+    Caseantagelse: MW repræsenterer det efterfølgende interval; se DATAORDLISTE.md.
+    Resultatet er et tilnærmet sammenligningsgrundlag, ikke officiel afregning.
+    """ 
+    return values * (interval_minutes / 60)
 
 def prepare_realtime(frame: pd.DataFrame) -> pd.DataFrame:
     """TODO 3: Skab én realtime-række pr. UTC-time og prisområde.
@@ -121,8 +140,60 @@ def prepare_realtime(frame: pd.DataFrame) -> pd.DataFrame:
 
     Husk at omregne hvert interval før summering.
     """
-    raise NextTodo("NÆSTE TODO 3: Implementér prepare_realtime().")
+    working = frame.copy()
 
+    working["hour_utc"] = working["Minutes5UTC"].dt.floor("h")
+
+    # Omregn HVERT interval til MWh, FØR der summeres.
+    mwh_columns = PRODUCTION_COLUMNS + FOREIGN_EXCHANGE_COLUMNS + ["ExchangeGreatBelt"]
+    for column in mwh_columns:
+        working[column] = mw_to_mwh(working[column])
+
+    # Flag pr. interval: er mindst én produktionskolonne negativ?
+    working["is_negative_production"] = (working[PRODUCTION_COLUMNS] < 0).any(axis=1)
+
+    grouped = working.groupby(["hour_utc", "PriceArea"], as_index=False).agg(
+        rt_interval_count=("Minutes5UTC", "size"),
+        rt_offshore_wind_mwh=("OffshoreWindPower", "sum"),
+        rt_onshore_wind_mwh=("OnshoreWindPower", "sum"),
+        rt_solar_mwh=("SolarPower", "sum"),
+        rt_production_lt100mw_mwh=("ProductionLt100MW", "sum"),
+        rt_production_ge100mw_mwh=("ProductionGe100MW", "sum"),
+        rt_great_belt_mwh=("ExchangeGreatBelt", "sum"),
+        rt_exchange_germany_mwh=("ExchangeGermany", "sum"),
+        rt_exchange_netherlands_mwh=("ExchangeNetherlands", "sum"),
+        rt_exchange_great_britain_mwh=("ExchangeGreatBritain", "sum"),
+        rt_exchange_norway_mwh=("ExchangeNorway", "sum"),
+        rt_exchange_sweden_mwh=("ExchangeSweden", "sum"),
+        rt_negative_interval_count=("is_negative_production", "sum"),
+    )
+
+    # Udenlandsk udveksling UDEN Storebælt.
+    grouped["rt_foreign_exchange_mwh"] = grouped[
+        [
+            "rt_exchange_germany_mwh",
+            "rt_exchange_netherlands_mwh",
+            "rt_exchange_great_britain_mwh",
+            "rt_exchange_norway_mwh",
+            "rt_exchange_sweden_mwh",
+        ]
+    ].sum(axis=1)
+
+    # Prisområdebalance MED Storebælt. Realtime har ingen forbrugskolonne,
+    # så dette er en forsyningsbalance (produktion + import), ikke en fuld
+    # load-balance som i afregning. Dokumentér denne antagelse i kildeskemaet.
+    grouped["rt_area_balance_mwh"] = (
+        grouped["rt_production_lt100mw_mwh"]
+        + grouped["rt_production_ge100mw_mwh"]
+        + grouped["rt_offshore_wind_mwh"]
+        + grouped["rt_onshore_wind_mwh"]
+        + grouped["rt_solar_mwh"]
+        + grouped["rt_foreign_exchange_mwh"]
+        + grouped["rt_great_belt_mwh"]
+    )
+
+    grouped = grouped.rename(columns={"PriceArea": "price_area"})
+    return grouped
 
 def prepare_settlement(frame: pd.DataFrame) -> pd.DataFrame:
     """TODO 4: Skab sammenligningsfelter i afregningsdata.
@@ -134,17 +205,17 @@ def prepare_settlement(frame: pd.DataFrame) -> pd.DataFrame:
     - udenlandsk udveksling uden Storebælt;
     - gross consumption.
     """
-    raise NextTodo("NÆSTE TODO 4: Implementér prepare_settlement().")
+    raise NextTodo("TODO 4 er ikke implementeret: prepare_settlement() Følg det aktuelle modul i OPGAVE.md.")
 
 
 def join_and_flag(realtime: pd.DataFrame, settlement: pd.DataFrame) -> pd.DataFrame:
     """TODO 5: Udfør outer join og tilføj kvalitetsflag.
 
-    Join på hour_utc + price_area, og validér én-til-én-kardinalitet.
+    Brug hour_utc + price_area som join key, og validér én-til-én-kardinalitet.
     Bevar mindst flag for joinstatus og præcis 12 realtime-intervaller.
     Tilføj gerne negative værdier, frosne tilstande og metadataadvarsler.
     """
-    raise NextTodo("NÆSTE TODO 5: Implementér join_and_flag().")
+    raise NextTodo("TODO 5 er ikke implementeret: join_and_flag() Følg det aktuelle modul i OPGAVE.md.")
 
 
 def create_quality_summary(analysis_ready: pd.DataFrame) -> dict:
@@ -153,7 +224,7 @@ def create_quality_summary(analysis_ready: pd.DataFrame) -> dict:
     Medtag mindst samlet rækkeantal, joinstatus, fulde/ufuldstændige timer
     og antal rækker med hvert kvalitetsflag.
     """
-    raise NextTodo("NÆSTE TODO 6: Implementér create_quality_summary().")
+    raise NextTodo("TODO 6 er ikke implementeret: create_quality_summary() Følg det aktuelle modul i OPGAVE.md.")
 
 
 def write_outputs(
@@ -174,15 +245,13 @@ def write_outputs(
     return csv_path, quality_path
 
 
-def run_period(period: str) -> tuple[Path, Path]:
+def build_realtime_period(period: str) -> tuple[pd.DataFrame, Path]:
+    """Kør kun det færdige Modul02-spor og gem mellemoutput."""
     if period not in PERIODS:
         raise ValueError(f"Ukendt periode: {period}")
-    realtime_name, settlement_name = PERIODS[period]
+    realtime_name, _ = PERIODS[period]
     realtime_raw = load_records(
         RAW_DIR / realtime_name, "ElectricityProdex5MinRealtime"
-    )
-    settlement_raw = load_records(
-        RAW_DIR / settlement_name, "ProductionConsumptionSettlement"
     )
     realtime_valid = validate_snapshot(
         realtime_raw,
@@ -190,13 +259,25 @@ def run_period(period: str) -> tuple[Path, Path]:
         "Minutes5UTC",
         "realtime",
     )
+    realtime_hourly = prepare_realtime(realtime_valid)
+    OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+    path = OUTPUT_DIR / f"realtime_hourly_{period}.csv"
+    realtime_hourly.to_csv(path, index=False)
+    return realtime_hourly, path
+
+
+def run_period(period: str) -> tuple[Path, Path]:
+    realtime_hourly, _ = build_realtime_period(period)
+    _, settlement_name = PERIODS[period]
+    settlement_raw = load_records(
+        RAW_DIR / settlement_name, "ProductionConsumptionSettlement"
+    )
     settlement_valid = validate_snapshot(
         settlement_raw,
         SETTLEMENT_REQUIRED_COLUMNS,
         "HourUTC",
         "afregning",
     )
-    realtime_hourly = prepare_realtime(realtime_valid)
     settlement_hourly = prepare_settlement(settlement_valid)
     analysis_ready = join_and_flag(realtime_hourly, settlement_hourly)
     quality_summary = create_quality_summary(analysis_ready)

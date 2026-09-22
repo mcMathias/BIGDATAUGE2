@@ -11,7 +11,7 @@ if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
 from contracts import PERIODS  # noqa: E402
-from pipeline import NextTodo, run_period  # noqa: E402
+from pipeline import NextTodo, build_realtime_period, run_period  # noqa: E402
 
 
 def main() -> None:
@@ -22,8 +22,14 @@ def main() -> None:
         default="dst",
         help="Start med dst, som er det mindste snapshot.",
     )
+    parser.add_argument("--stage", choices=["realtime", "all"], default="all",
+                        help="Brug realtime til Modul02-checkpoint før TODO 4–6.")
     args = parser.parse_args()
     try:
+        if args.stage == "realtime":
+            _, path = build_realtime_period(args.period)
+            print(f"REALTIME CHECKPOINT: {path}")
+            return
         csv_path, quality_path = run_period(args.period)
     except NextTodo as error:
         raise SystemExit(str(error)) from error
